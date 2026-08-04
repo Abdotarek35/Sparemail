@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2591c9">
+<title>تواصل معنا - Sparemail</title>
+<meta name="description" content="تواصل مع فريق Sparemail لأي استفسار أو اقتراح.">
+<link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="site-header">
+    <a class="site-logo" href="/">
+      <img src="/favicon.png" alt="Sparemail">
+      <span>Sparemail</span>
+    </a>
+    <a class="back-link" href="/">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      الرئيسية
+    </a>
+  </div>
+
+  <div class="page-card">
+    <h1 class="page-title">تواصل معنا</h1>
+    <p class="page-updated">هنسعد نسمع منك</p>
+
+    <p>عندك سؤال، اقتراح، أو واجهت مشكلة في الموقع؟ ابعتلنا رسالة وهنحاول نرد بأسرع وقت.</p>
+
+    <form id="contactForm">
+      <div class="form-group">
+        <label for="nameInput">الاسم</label>
+        <input type="text" id="nameInput" required>
+      </div>
+      <div class="form-group">
+        <label for="emailInput">بريدك الإلكتروني (اختياري - لو عايز رد)</label>
+        <input type="email" id="emailInput">
+      </div>
+      <div class="form-group">
+        <label for="messageInput">رسالتك</label>
+        <textarea id="messageInput" required></textarea>
+      </div>
+      <button type="submit" class="submit-btn" id="submitBtn">إرسال الرسالة</button>
+      <div class="form-status" id="formStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div class="site-footer">
+  <a href="/">الرئيسية</a>
+  <a href="/articles.html">المقالات</a>
+  <a href="/about.html">من نحن</a>
+  <a href="/contact.html">تواصل معنا</a>
+  <a href="/privacy.html">سياسة الخصوصية</a>
+  <a href="/terms.html">الشروط والأحكام</a>
+</div>
+
+<script>
+  const FIREBASE_URL = 'https://sparemail-87ef2-default-rtdb.europe-west1.firebasedatabase.app';
+  const MESSAGES_ENDPOINT = `${FIREBASE_URL}/contactMessages.json`;
+
+  const form = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusEl = document.getElementById('formStatus');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('nameInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    const message = document.getElementById('messageInput').value.trim();
+
+    if(!name || !message) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'جاري الإرسال...';
+    statusEl.className = 'form-status';
+
+    try{
+      const res = await fetch(MESSAGES_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ name, email, message, ts: Date.now() })
+      });
+      if(!res.ok) throw new Error('send failed');
+
+      statusEl.textContent = 'تم إرسال رسالتك بنجاح، شكرًا لتواصلك معنا!';
+      statusEl.classList.add('show', 'ok');
+      form.reset();
+    }catch(err){
+      statusEl.textContent = 'تعذّر إرسال الرسالة - تحقق من الاتصال وحاول تاني.';
+      statusEl.classList.add('show', 'err');
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'إرسال الرسالة';
+    }
+  });
+</script>
+
+</body>
+</html>
