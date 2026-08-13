@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+(function(){
+  var t = localStorage.getItem('sparemail_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2591c9">
+<title>تواصل معنا - Sparemail</title>
+<meta name="description" content="تواصل مع فريق Sparemail لأي استفسار أو اقتراح.">
+<link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="site-header">
+    <a class="site-logo" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <img src="/favicon.png" alt="Sparemail">
+      <span>Sparemail</span>
+    </a>
+    <div class="header-controls">
+      <button class="header-toggle-btn" id="themeToggleBtn" aria-label="تبديل الوضع الليلي/النهاري" title="الوضع الليلي/النهاري">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="header-toggle-btn" id="langToggleBtn" aria-label="Switch language" title="EN / AR">
+        <span data-ar="EN" data-en="AR">EN</span>
+      </button>
+    </div>
+    <a class="back-link" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span data-ar="الرئيسية" data-en="Home">الرئيسية</span>
+    </a>
+  </div>
+
+  <div class="page-card">
+    <h1 class="page-title" data-ar="تواصل معنا" data-en="Contact Us">تواصل معنا</h1>
+    <p class="page-updated" data-ar="هنسعد نسمع منك" data-en="We'd love to hear from you">هنسعد نسمع منك</p>
+
+    <p data-ar="عندك سؤال، اقتراح، أو واجهت مشكلة في الموقع؟ ابعتلنا رسالة وهنحاول نرد بأسرع وقت." data-en="Have a question, a suggestion, or ran into an issue on the site? Send us a message and we'll get back to you as soon as we can.">عندك سؤال، اقتراح، أو واجهت مشكلة في الموقع؟ ابعتلنا رسالة وهنحاول نرد بأسرع وقت.</p>
+
+    <form id="contactForm">
+      <div class="form-group">
+        <label for="nameInput" data-ar="الاسم" data-en="Name">الاسم</label>
+        <input type="text" id="nameInput" required>
+      </div>
+      <div class="form-group">
+        <label for="emailInput" data-ar="بريدك الإلكتروني (اختياري - لو عايز رد)" data-en="Your email (optional - if you'd like a reply)">بريدك الإلكتروني (اختياري - لو عايز رد)</label>
+        <input type="email" id="emailInput">
+      </div>
+      <div class="form-group">
+        <label for="messageInput" data-ar="رسالتك" data-en="Your message">رسالتك</label>
+        <textarea id="messageInput" required></textarea>
+      </div>
+      <button type="submit" class="submit-btn" id="submitBtn" data-ar="إرسال الرسالة" data-en="Send Message">إرسال الرسالة</button>
+      <div class="form-status" id="formStatus"></div>
+    </form>
+  </div>
+</div>
+
+<div class="site-footer">
+  <a href="/" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
+  <a href="/articles.html" data-ar="المقالات" data-en="Articles">المقالات</a>
+  <a href="/about.html" data-ar="من نحن" data-en="About">من نحن</a>
+  <a href="/contact.html" data-ar="تواصل معنا" data-en="Contact">تواصل معنا</a>
+  <a href="/privacy.html" data-ar="سياسة الخصوصية" data-en="Privacy Policy">سياسة الخصوصية</a>
+  <a href="/terms.html" data-ar="الشروط والأحكام" data-en="Terms">الشروط والأحكام</a>
+</div>
+
+<script src="/pages.js"></script>
+<script>
+  const FIREBASE_URL = 'https://sparemail-87ef2-default-rtdb.europe-west1.firebasedatabase.app';
+  const MESSAGES_ENDPOINT = `${FIREBASE_URL}/contactMessages.json`;
+
+  const form = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusEl = document.getElementById('formStatus');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('nameInput').value.trim();
+    const email = document.getElementById('emailInput').value.trim();
+    const message = document.getElementById('messageInput').value.trim();
+
+    if(!name || !message) return;
+
+    const isEn = document.documentElement.lang === 'en';
+    submitBtn.disabled = true;
+    submitBtn.textContent = isEn ? 'Sending...' : 'جاري الإرسال...';
+    statusEl.className = 'form-status';
+
+    try{
+      const res = await fetch(MESSAGES_ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ name, email, message, ts: Date.now() })
+      });
+      if(!res.ok) throw new Error('send failed');
+
+      statusEl.textContent = isEn ? 'Your message has been sent - thank you for reaching out!' : 'تم إرسال رسالتك بنجاح، شكرًا لتواصلك معنا!';
+      statusEl.classList.add('show', 'ok');
+      form.reset();
+    }catch(err){
+      statusEl.textContent = isEn ? 'Could not send your message - check your connection and try again.' : 'تعذّر إرسال الرسالة - تحقق من الاتصال وحاول تاني.';
+      statusEl.classList.add('show', 'err');
+    }finally{
+      submitBtn.disabled = false;
+      submitBtn.textContent = isEn ? 'Send Message' : 'إرسال الرسالة';
+    }
+  });
+</script>
+
+</body>
+</html>

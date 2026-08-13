@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+(function(){
+  var t = localStorage.getItem('sparemail_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2591c9">
+<title>الشروط والأحكام - Sparemail</title>
+<meta name="description" content="الشروط والأحكام الخاصة باستخدام خدمة Sparemail.">
+<link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="site-header">
+    <a class="site-logo" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <img src="/favicon.png" alt="Sparemail">
+      <span>Sparemail</span>
+    </a>
+    <div class="header-controls">
+      <button class="header-toggle-btn" id="themeToggleBtn" aria-label="تبديل الوضع الليلي/النهاري" title="الوضع الليلي/النهاري">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="header-toggle-btn" id="langToggleBtn" aria-label="Switch language" title="EN / AR">
+        <span data-ar="EN" data-en="AR">EN</span>
+      </button>
+    </div>
+    <a class="back-link" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span data-ar="الرئيسية" data-en="Home">الرئيسية</span>
+    </a>
+  </div>
+
+  <div class="page-card">
+    <h1 class="page-title" data-ar="الشروط والأحكام" data-en="Terms of Service">الشروط والأحكام</h1>
+    <p class="page-updated" data-ar="آخر تحديث: أغسطس 2026" data-en="Last updated: August 2026">آخر تحديث: أغسطس 2026</p>
+
+    <p data-ar="باستخدامك لموقع Sparemail، إنت موافق على الشروط والأحكام دي. برجاء قراءتها بعناية." data-en="By using Sparemail, you agree to these terms. Please read them carefully.">باستخدامك لموقع Sparemail، إنت موافق على الشروط والأحكام دي. برجاء قراءتها بعناية.</p>
+
+    <h2 data-ar="طبيعة الخدمة" data-en="Nature of the service">طبيعة الخدمة</h2>
+    <p data-ar="Sparemail بتقدم عناوين بريد إلكتروني مؤقتة للاستخدام قصير المدى، وذلك من غير أي ضمان لاستمرارية توفر العنوان أو الرسائل لفترة طويلة." data-en="Sparemail provides temporary email addresses for short-term use, with no guarantee that any address or its messages will remain available for an extended period.">Sparemail بتقدم عناوين بريد إلكتروني مؤقتة للاستخدام قصير المدى، وذلك من غير أي ضمان لاستمرارية توفر العنوان أو الرسائل لفترة طويلة.</p>
+
+    <h2 data-ar="الاستخدام المسموح" data-en="Permitted use">الاستخدام المسموح</h2>
+    <ul>
+      <li data-ar="استخدام الخدمة لأغراض قانونية بس." data-en="Use the service for lawful purposes only.">استخدام الخدمة لأغراض قانونية بس.</li>
+      <li data-ar="عدم استخدام الخدمة لأي نشاط احتيالي أو مضر بالآخرين." data-en="Do not use the service for any fraudulent activity or activity that harms others.">عدم استخدام الخدمة لأي نشاط احتيالي أو مضر بالآخرين.</li>
+      <li data-ar="عدم محاولة إساءة استخدام الخدمة بشكل آلي مفرط (Abuse / Spam)." data-en="Do not attempt excessive automated abuse of the service (spam/abuse).">عدم محاولة إساءة استخدام الخدمة بشكل آلي مفرط (Abuse / Spam).</li>
+    </ul>
+
+    <h2 data-ar="المحتوى المنشور من المستخدمين" data-en="User-published content">المحتوى المنشور من المستخدمين</h2>
+    <p data-ar="لو استخدمت خاصية نشر المقالات، إنت مسؤول بالكامل عن المحتوى اللي بتنشره. بيُمنع نشر أي محتوى مسيء، غير قانوني، أو ينتهك حقوق طرف تالت. بنحتفظ بالحق في حذف أي محتوى مخالف من غير إشعار مسبق." data-en="If you use the article-publishing feature, you are fully responsible for the content you publish. Publishing offensive, illegal, or rights-infringing content is prohibited. We reserve the right to remove any violating content without prior notice.">لو استخدمت خاصية نشر المقالات، إنت مسؤول بالكامل عن المحتوى اللي بتنشره. بيُمنع نشر أي محتوى مسيء، غير قانوني، أو ينتهك حقوق طرف تالت. بنحتفظ بالحق في حذف أي محتوى مخالف من غير إشعار مسبق.</p>
+
+    <h2 data-ar="حدود المسؤولية" data-en="Limitation of liability">حدود المسؤولية</h2>
+    <p data-ar="الخدمة بتُقدَّم &quot;كما هي&quot; من غير أي ضمانات. مش مسؤولين عن أي أضرار ناتجة عن استخدام الخدمة أو عدم توفرها في أي وقت." data-en="The service is provided &quot;as is&quot; with no warranties. We are not liable for any damages resulting from use of the service or its unavailability at any time.">الخدمة بتُقدَّم "كما هي" من غير أي ضمانات. مش مسؤولين عن أي أضرار ناتجة عن استخدام الخدمة أو عدم توفرها في أي وقت.</p>
+
+    <h2 data-ar="التعديلات على الشروط" data-en="Changes to these terms">التعديلات على الشروط</h2>
+    <p data-ar="ممكن نعدّل الشروط دي في أي وقت. استمرارك في استخدام الموقع بعد أي تعديل يعتبر موافقة على الشروط الجديدة." data-en="We may modify these terms at any time. Continuing to use the site after any change constitutes acceptance of the new terms.">ممكن نعدّل الشروط دي في أي وقت. استمرارك في استخدام الموقع بعد أي تعديل يعتبر موافقة على الشروط الجديدة.</p>
+
+    <h2 data-ar="التواصل" data-en="Contact">التواصل</h2>
+    <p><span data-ar="لأي استفسار بخصوص الشروط، تواصل معانا من" data-en="For any questions about these terms, reach us from our">لأي استفسار بخصوص الشروط، تواصل معانا من</span> <a href="/contact.html" data-ar="صفحة تواصل معنا" data-en="contact page">صفحة تواصل معنا</a>.</p>
+  </div>
+</div>
+
+<div class="site-footer">
+  <a href="/" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
+  <a href="/articles.html" data-ar="المقالات" data-en="Articles">المقالات</a>
+  <a href="/about.html" data-ar="من نحن" data-en="About">من نحن</a>
+  <a href="/contact.html" data-ar="تواصل معنا" data-en="Contact">تواصل معنا</a>
+  <a href="/privacy.html" data-ar="سياسة الخصوصية" data-en="Privacy Policy">سياسة الخصوصية</a>
+  <a href="/terms.html" data-ar="الشروط والأحكام" data-en="Terms">الشروط والأحكام</a>
+</div>
+
+<script src="/pages.js"></script>
+</body>
+</html>

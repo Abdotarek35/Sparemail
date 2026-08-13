@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+(function(){
+  var t = localStorage.getItem('sparemail_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2591c9">
+<title>من نحن - Sparemail</title>
+<meta name="description" content="تعرف على Sparemail، خدمة البريد الإلكتروني المؤقت المجانية اللي بتحمي خصوصيتك أونلاين.">
+<link rel="stylesheet" href="/pages.css">
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="site-header">
+    <a class="site-logo" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <img src="/favicon.png" alt="Sparemail">
+      <span>Sparemail</span>
+    </a>
+    <div class="header-controls">
+      <button class="header-toggle-btn" id="themeToggleBtn" aria-label="تبديل الوضع الليلي/النهاري" title="الوضع الليلي/النهاري">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+      </button>
+      <button class="header-toggle-btn" id="langToggleBtn" aria-label="Switch language" title="EN / AR">
+        <span data-ar="EN" data-en="AR">EN</span>
+      </button>
+    </div>
+    <a class="back-link" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span data-ar="الرئيسية" data-en="Home">الرئيسية</span>
+    </a>
+  </div>
+
+  <div class="page-card">
+    <h1 class="page-title" data-ar="من نحن" data-en="About Us">من نحن</h1>
+    <p class="page-updated">Sparemail</p>
+
+    <p data-ar="Sparemail خدمة بريد إلكتروني مؤقت مجانية، هدفها إنها تخليك تحمي بريدك الحقيقي من الرسائل غير المرغوب فيها والتتبع، من غير ما تحتاج تسجيل أو تعطي أي بيانات شخصية." data-en="Sparemail is a free temporary email service, built to help you protect your real inbox from spam and tracking - no signup, no personal data required.">Sparemail خدمة بريد إلكتروني مؤقت مجانية، هدفها إنها تخليك تحمي بريدك الحقيقي من الرسائل غير المرغوب فيها والتتبع، من غير ما تحتاج تسجيل أو تعطي أي بيانات شخصية.</p>
+
+    <h2 data-ar="ليه أنشأنا Sparemail؟" data-en="Why did we build Sparemail?">ليه أنشأنا Sparemail؟</h2>
+    <p data-ar="كل يوم بنتسجل في مواقع وخدمات جديدة، وأغلبها بيطلب بريد إلكتروني حتى لو مكناش هنستخدمه غير مرة واحدة. ده بيعرّض بريدنا الحقيقي للسبام ومحاولات التتبع. Sparemail بيديك عنوان بريد فوري وحقيقي تقدر تستخدمه في أي وقت من غير ما تكشف هويتك." data-en="Every day we sign up for new sites and services, most of which ask for an email even if we'll only use it once. That exposes our real inbox to spam and tracking. Sparemail gives you an instant, real address you can use anytime without revealing your identity.">كل يوم بنتسجل في مواقع وخدمات جديدة، وأغلبها بيطلب بريد إلكتروني حتى لو مكناش هنستخدمه غير مرة واحدة. ده بيعرّض بريدنا الحقيقي للسبام ومحاولات التتبع. Sparemail بيديك عنوان بريد فوري وحقيقي تقدر تستخدمه في أي وقت من غير ما تكشف هويتك.</p>
+
+    <h2 data-ar="إيه اللي بيميزنا؟" data-en="What makes us different?">إيه اللي بيميزنا؟</h2>
+    <ul>
+      <li><strong data-ar="بدون تسجيل:" data-en="No signup:">بدون تسجيل:</strong> <span data-ar="مفيش حسابات ولا كلمات مرور." data-en="No accounts, no passwords.">مفيش حسابات ولا كلمات مرور.</span></li>
+      <li><strong data-ar="فوري:" data-en="Instant:">فوري:</strong> <span data-ar="العنوان بيتولّد في ثوانٍ." data-en="Your address is generated in seconds.">العنوان بيتولّد في ثوانٍ.</span></li>
+      <li><strong data-ar="خصوصية:" data-en="Private:">خصوصية:</strong> <span data-ar="مبنعرفش هويتك ومبنطلبش أي بيانات شخصية." data-en="We don't know who you are and never ask for personal data.">مبنعرفش هويتك ومبنطلبش أي بيانات شخصية.</span></li>
+      <li><strong data-ar="مجاني بالكامل:" data-en="Completely free:">مجاني بالكامل:</strong> <span data-ar="ومفيش أي حد أقصى لعدد العناوين اللي تقدر تنشئها." data-en="No limit on how many addresses you can create.">ومفيش أي حد أقصى لعدد العناوين اللي تقدر تنشئها.</span></li>
+    </ul>
+
+    <h2 data-ar="تواصل معنا" data-en="Get in touch">تواصل معنا</h2>
+    <p><span data-ar="لو عندك أي سؤال أو اقتراح، تقدر تزور" data-en="If you have any question or suggestion, visit our">لو عندك أي سؤال أو اقتراح، تقدر تزور</span> <a href="/contact.html" data-ar="صفحة تواصل معنا" data-en="contact page">صفحة تواصل معنا</a>.</p>
+  </div>
+</div>
+
+<div class="site-footer">
+  <a href="/" data-ar="الرئيسية" data-en="Home">الرئيسية</a>
+  <a href="/articles.html" data-ar="المقالات" data-en="Articles">المقالات</a>
+  <a href="/about.html" data-ar="من نحن" data-en="About">من نحن</a>
+  <a href="/contact.html" data-ar="تواصل معنا" data-en="Contact">تواصل معنا</a>
+  <a href="/privacy.html" data-ar="سياسة الخصوصية" data-en="Privacy Policy">سياسة الخصوصية</a>
+  <a href="/terms.html" data-ar="الشروط والأحكام" data-en="Terms">الشروط والأحكام</a>
+</div>
+
+<script src="/pages.js"></script>
+</body>
+</html>
