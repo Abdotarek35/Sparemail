@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<script>
+(function(){
+  var t = localStorage.getItem('sparemail_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+})();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" type="image/png" href="/favicon.png">
+<meta name="robots" content="noindex, nofollow">
+<title>لوحة المراجعة - Sparemail</title>
+<link rel="stylesheet" href="/pages.css">
+<style>
+  .login-box{ max-width:360px; margin:60px auto 0; }
+  .login-box .form-group{ margin-bottom:14px; }
+  .login-error{
+    margin-top:10px;
+    font-size:13px;
+    color:#e5555a;
+    display:none;
+  }
+  .login-error.show{ display:block; }
+
+  .pending-list{ display:flex; flex-direction:column; gap:16px; margin-top:18px; }
+  .pending-item{
+    background:var(--input-bg);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:16px;
+  }
+  .pending-item-thumb{
+    width:100%;
+    max-height:220px;
+    border-radius:12px;
+    overflow:hidden;
+    margin-bottom:12px;
+    background:rgba(255,255,255,.04);
+  }
+  .pending-item-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .pending-item-title{ font-size:16px; font-weight:800; margin:0 0 6px; color:var(--text-dark); }
+  .pending-item-content{ font-size:13.5px; color:var(--text-gray); line-height:1.7; white-space:pre-wrap; margin:0 0 10px; }
+  .pending-item-date{ font-size:11.5px; color:var(--text-gray); opacity:.7; margin:0 0 12px; }
+  .pending-item-actions{ display:flex; gap:10px; }
+  .approve-btn, .reject-btn{
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    border:none;
+    font-size:13.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .approve-btn{ background:#2fbf71; color:#fff; }
+  .reject-btn{ background:rgba(229,85,90,.15); color:#e5555a; }
+  .approve-btn:disabled, .reject-btn:disabled{ opacity:.5; cursor:default; }
+
+  .logout-btn{
+    font-size:12.5px;
+    color:var(--text-gray);
+    background:none;
+    border:none;
+    cursor:pointer;
+    text-decoration:underline;
+  }
+  #dashboard{ display:none; }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div class="site-header">
+    <a class="site-logo" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <img src="/favicon.png" alt="Sparemail">
+      <span>Sparemail</span>
+    </a>
+    <a class="back-link" href="/" onclick="event.preventDefault(); location.replace('/');">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      الرئيسية
+    </a>
+  </div>
+
+  <div class="page-card" id="loginCard">
+    <h1 class="page-title">لوحة المراجعة</h1>
+    <p class="page-updated">سجّل دخولك بحساب الإدارة</p>
+
+    <div class="login-box">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="emailInput">البريد الإلكتروني</label>
+          <input type="email" id="emailInput" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="passwordInput">كلمة المرور</label>
+          <input type="password" id="passwordInput" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="submit-btn" id="loginBtn">تسجيل الدخول</button>
+        <p class="login-error" id="loginError"></p>
+      </form>
+    </div>
+  </div>
+
+  <div class="page-card" id="dashboard">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+      <h1 class="page-title" style="margin-bottom:0;">المقالات المعلّقة</h1>
+      <button class="logout-btn" id="logoutBtn">تسجيل الخروج</button>
+    </div>
+    <p class="page-updated" id="pendingCount">جاري التحميل...</p>
+    <div class="pending-list" id="pendingList"></div>
+  </div>
+</div>
+
+<script>
+  const FIREBASE_URL = 'https://sparemail-87ef2-default-rtdb.europe-west1.firebasedatabase.app';
+  const API_KEY = 'AIzaSyBRzE4VslZfrqRKbdGHr_o-v3oKTsjDJis';
+  const SIGNIN_URL = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`;
+  const TOKEN_KEY = 'sparemail_admin_token';
+
+  const loginCard = document.getElementById('loginCard');
+  const dashboard = document.getElementById('dashboard');
+  const loginForm = document.getElementById('loginForm');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const pendingList = document.getElementById('pendingList');
+  const pendingCount = document.getElementById('pendingCount');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function showDashboard(){
+    loginCard.style.display = 'none';
+    dashboard.style.display = 'block';
+    loadPending();
+  }
+  function showLogin(){
+    dashboard.style.display = 'none';
+    loginCard.style.display = 'block';
+  }
+
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    loginError.classList.remove('show');
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'جاري الدخول...';
+
+    try{
+      const res = await fetch(SIGNIN_URL, {
+        method: 'POST',
+        body: JSON.stringify({ email, password, returnSecureToken: true })
+      });
+      const data = await res.json();
+      if(!res.ok || !data.idToken){
+        throw new Error((data.error && data.error.message) || 'login failed');
+      }
+      sessionStorage.setItem(TOKEN_KEY, data.idToken);
+      showDashboard();
+    }catch(err){
+      loginError.textContent = 'بيانات الدخول غير صحيحة أو الحساب غير مفعّل بعد.';
+      loginError.classList.add('show');
+    }finally{
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'تسجيل الدخول';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    sessionStorage.removeItem(TOKEN_KEY);
+    showLogin();
+  });
+
+  function getToken(){
+    return sessionStorage.getItem(TOKEN_KEY);
+  }
+
+  async function loadPending(){
+    const token = getToken();
+    pendingList.innerHTML = '';
+    pendingCount.textContent = 'جاري التحميل...';
+
+    try{
+      const res = await fetch(`${FIREBASE_URL}/pending_articles.json?auth=${token}`);
+      if(res.status === 401 || res.status === 403){
+        sessionStorage.removeItem(TOKEN_KEY);
+        showLogin();
+        return;
+      }
+      if(!res.ok) throw new Error('fetch failed');
+      const data = await res.json();
+
+      if(!data || typeof data !== 'object'){
+        pendingCount.textContent = 'مفيش مقالات معلّقة حاليًا.';
+        return;
+      }
+
+      const items = Object.entries(data).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
+      pendingCount.textContent = `عدد المقالات المعلّقة: ${items.length}`;
+
+      items.forEach(([id, article]) => {
+        const card = document.createElement('div');
+        card.className = 'pending-item';
+
+        const thumbHtml = article.image
+          ? `<div class="pending-item-thumb"><img src="${article.image}" alt=""></div>`
+          : '';
+
+        card.innerHTML = `
+          ${thumbHtml}
+          <p class="pending-item-title">${escapeHtml(article.ar || '(بدون عنوان)')}</p>
+          <p class="pending-item-content">${escapeHtml(article.content || '(بدون محتوى)')}</p>
+          <p class="pending-item-date">${article.ts ? new Date(article.ts).toLocaleString('ar-EG') : ''}</p>
+          <div class="pending-item-actions">
+            <button class="approve-btn">قبول ونشر</button>
+            <button class="reject-btn">رفض وحذف</button>
+          </div>
+        `;
+
+        const approveBtn = card.querySelector('.approve-btn');
+        const rejectBtn = card.querySelector('.reject-btn');
+
+        approveBtn.addEventListener('click', async () => {
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          const t = getToken();
+          try{
+            const publishRes = await fetch(`${FIREBASE_URL}/articles.json?auth=${t}`, {
+              method: 'POST',
+              body: JSON.stringify(article)
+            });
+            if(!publishRes.ok) throw new Error('publish failed');
+            await fetch(`${FIREBASE_URL}/pending_articles/${encodeURIComponent(id)}.json?auth=${t}`, { method: 'DELETE' });
+            card.remove();
+            pendingCount.textContent = `عدد المقالات المعلّقة: ${pendingList.children.length}`;
+          }catch(err){
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+            alert('تعذّر النشر - حاول تاني.');
+          }
+        });
+
+        rejectBtn.addEventListener('click', async () => {
+          approveBtn.disabled = true;
+          rejectBtn.disabled = true;
+          const t = getToken();
+          try{
+            await fetch(`${FIREBASE_URL}/pending_articles/${encodeURIComponent(id)}.json?auth=${t}`, { method: 'DELETE' });
+            card.remove();
+            pendingCount.textContent = `عدد المقالات المعلّقة: ${pendingList.children.length}`;
+          }catch(err){
+            approveBtn.disabled = false;
+            rejectBtn.disabled = false;
+            alert('تعذّر الحذف - حاول تاني.');
+          }
+        });
+
+        pendingList.appendChild(card);
+      });
+    }catch(err){
+      pendingCount.textContent = 'تعذّر تحميل المقالات المعلّقة - تحقق من الاتصال.';
+    }
+  }
+
+  /* Auto-login if a session token is still around */
+  if(getToken()){
+    showDashboard();
+  }
+</script>
+
+</body>
+</html>
