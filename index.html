@@ -2307,57 +2307,81 @@
     pollTimer = setInterval(() => checkMessages(false), 5000);
   }
 
+  async function tryCreateAddress(domain, base){
+    let finalDomain = domain;
+
+    if(!finalDomain){
+      const domRes = await fetch(`${base}/domains`);
+      if(!domRes.ok) throw new Error('domains fetch failed');
+      const domData = await domRes.json();
+      const fetchedDomains = domData['hydra:member'] || domData.member || [];
+      if(!fetchedDomains.length) throw new Error('no domains available');
+      finalDomain = fetchedDomains[Math.floor(Math.random() * fetchedDomains.length)].domain;
+    }
+
+    const address = `${randomString(10)}@${finalDomain}`;
+    const password = randomString(16);
+
+    const createRes = await fetch(`${base}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, password })
+    });
+    if(!createRes.ok) throw new Error('account creation failed');
+    const accountData = await createRes.json();
+
+    const tokenRes = await fetch(`${base}/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, password })
+    });
+    if(!tokenRes.ok) throw new Error('token request failed');
+    const tokenData = await tokenRes.json();
+
+    return { address, domain: finalDomain, accountId: accountData.id, token: tokenData.token };
+  }
+
   async function fetchNewAddress(preferredDomain, preferredBase){
     stopPolling();
     emailText.classList.add('swap');
-    try{
-      let domain = preferredDomain;
-      const base = preferredBase || API;
 
-      if(!domain){
-        const domRes = await fetch(`${base}/domains`);
-        if(!domRes.ok) throw new Error('domains fetch failed');
-        const domData = await domRes.json();
-        const fetchedDomains = domData['hydra:member'] || domData.member || [];
-        if(!fetchedDomains.length) throw new Error('no domains available');
-        domain = fetchedDomains[Math.floor(Math.random() * fetchedDomains.length)].domain;
+    /* If the user explicitly picked a domain/provider from the dropdown,
+       respect that exact choice - only fall back across providers when
+       no specific preference was given (e.g. initial load, plain refresh). */
+    const attempts = preferredBase ? [preferredBase] : API_PROVIDERS;
+    let result = null;
+    let lastError = null;
+
+    let usedBase = null;
+    for(const base of attempts){
+      try{
+        result = await tryCreateAddress(preferredDomain, base);
+        usedBase = base;
+        break;
+      }catch(err){
+        lastError = err;
       }
-
-      const address = `${randomString(10)}@${domain}`;
-      const password = randomString(16);
-
-      const createRes = await fetch(`${base}/accounts`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, password })
-      });
-      if(!createRes.ok) throw new Error('account creation failed');
-      const accountData = await createRes.json();
-      accountId = accountData.id;
-
-      const tokenRes = await fetch(`${base}/token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, password })
-      });
-      if(!tokenRes.ok) throw new Error('token request failed');
-      const tokenData = await tokenRes.json();
-      authToken = tokenData.token;
-      currentApiBase = base;
-      currentDomain = domain;
-
-      setTimeout(() => {
-        emailText.textContent = address;
-        emailText.classList.remove('empty');
-        emailText.classList.remove('swap');
-      }, 180);
-
-      resetMessages();
-      startPolling();
-    }catch(err){
-      emailText.classList.remove('swap');
-      showToast('تعذّر إنشاء العنوان - تحقق من الاتصال', 'Could not generate address - check your connection');
     }
+
+    if(!result){
+      emailText.classList.remove('swap');
+      showToast('تعذّر إنشاء العنوان - الخدمة غير متاحة مؤقتًا، جرّب تاني بعد قليل', 'Could not generate address - service temporarily unavailable, try again shortly');
+      return;
+    }
+
+    accountId = result.accountId;
+    authToken = result.token;
+    currentApiBase = usedBase;
+    currentDomain = result.domain;
+
+    setTimeout(() => {
+      emailText.textContent = result.address;
+      emailText.classList.remove('empty');
+      emailText.classList.remove('swap');
+    }, 180);
+
+    resetMessages();
+    startPolling();
   }
 
   async function checkMessages(manual){
