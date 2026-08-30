@@ -2183,6 +2183,37 @@
   let currentApiBase = API_PROVIDERS[0];
   let currentDomain = '';
 
+  /* Maildrop.cc - third provider. GraphQL-based, no account/token needed
+     (any mailbox name works instantly). It uses its own stable root domain
+     which never rotates the way mail.tm/mail.gw subdomains do, so it also
+     doubles as a real, always-available fallback when both REST providers
+     are down - unlike a hardcoded subdomain name, this one won't go stale. */
+  const MAILDROP_BASE = 'maildrop';
+  const MAILDROP_DOMAIN = 'maildrop.cc';
+  const MAILDROP_GRAPHQL = 'https://api.maildrop.cc/graphql';
+  const ALL_PROVIDERS = [...API_PROVIDERS, MAILDROP_BASE];
+
+  async function maildropQuery(query, variables){
+    const res = await fetch(MAILDROP_GRAPHQL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables })
+    });
+    if(!res.ok) throw new Error('maildrop request failed');
+    const json = await res.json();
+    if(json.errors && json.errors.length) throw new Error(json.errors[0].message || 'maildrop error');
+    return json.data;
+  }
+
+  function htmlToPlainText(html){
+    try{
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      return doc.body.textContent || '';
+    }catch(err){
+      return html.replace(/<[^>]*>/g, ' ');
+    }
+  }
+
   function randomString(len){
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let s = '';
@@ -2240,22 +2271,21 @@
         API_PROVIDERS.map(base => fetch(`${base}/domains`).then(r => r.ok ? r.json() : Promise.reject()))
       );
 
-      availableDomains = [{ domain: 'web-library.net', base: 'https://api.mail.tm' }];
+      availableDomains = [];
       results.forEach((result, i) => {
         if(result.status !== 'fulfilled') return;
         const list = result.value['hydra:member'] || result.value.member || [];
         list.forEach(d => {
-          if(d.domain && !availableDomains.some(existing => existing.domain === d.domain)){
+          if(d.domain && d.isActive !== false && !availableDomains.some(existing => existing.domain === d.domain)){
             availableDomains.push({ domain: d.domain, base: API_PROVIDERS[i] });
           }
         });
       });
-      domainsLoaded = true;
 
-      if(!availableDomains.length){
-        domainList.innerHTML = '<li class="domain-loading">مفيش نطاقات متاحة حاليًا</li>';
-        return;
-      }
+      /* Maildrop.cc doesn't rotate domains, so it's always a real, working
+         option - shown alongside whatever mail.tm/mail.gw return live. */
+      availableDomains.push({ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE });
+      domainsLoaded = true;
 
       domainList.innerHTML = '';
       availableDomains.forEach(({ domain, base }) => {
@@ -2269,7 +2299,19 @@
         domainList.appendChild(li);
       });
     }catch(err){
-      domainList.innerHTML = '<li class="domain-loading">تعذّر تحميل النطاقات</li>';
+      availableDomains = [{ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE }];
+      domainsLoaded = true;
+      domainList.innerHTML = '';
+      availableDomains.forEach(({ domain, base }) => {
+        const li = document.createElement('li');
+        li.className = 'domain-option';
+        li.textContent = `@${domain}`;
+        li.addEventListener('click', () => {
+          closeDomainDropdown();
+          fetchNewAddress(domain, base);
+        });
+        domainList.appendChild(li);
+      });
     }
   }
 
@@ -2308,6 +2350,14 @@
   }
 
   async function tryCreateAddress(domain, base){
+    if(base === MAILDROP_BASE){
+      /* Maildrop has no signup step - any mailbox name @maildrop.cc is
+         live the moment something is sent to it, no account/token call. */
+      const finalDomain = MAILDROP_DOMAIN;
+      const mailbox = randomString(10);
+      return { address: `${mailbox}@${finalDomain}`, domain: finalDomain, accountId: mailbox, token: null };
+    }
+
     let finalDomain = domain;
 
     if(!finalDomain){
@@ -2348,7 +2398,7 @@
     /* If the user explicitly picked a domain/provider from the dropdown,
        respect that exact choice - only fall back across providers when
        no specific preference was given (e.g. initial load, plain refresh). */
-    const attempts = preferredBase ? [preferredBase] : API_PROVIDERS;
+    const attempts = preferredBase ? [preferredBase] : ALL_PROVIDERS;
     let result = null;
     let lastError = null;
 
@@ -2385,6 +2435,30 @@
   }
 
   async function checkMessages(manual){
+    if(currentApiBase === MAILDROP_BASE){
+      if(!accountId) return;
+      try{
+        const data = await maildropQuery(
+          `query Inbox($mailbox: String!){ inbox(mailbox: $mailbox){ id headerfrom subject date } }`,
+          { mailbox: accountId }
+        );
+        const messages = (data && data.inbox) || [];
+        const newOnes = messages.filter(m => !seenIds.has(m.id)).reverse();
+        newOnes.forEach(m => {
+          seenIds.add(m.id);
+          addRealMessage({ id: m.id, subject: m.subject, from: { address: m.headerfrom } });
+        });
+        if(manual && newOnes.length === 0){
+          showToast('مفيش رسائل جديدة لسه', 'No new messages yet');
+        }
+      }catch(err){
+        if(manual){
+          showToast('تعذّر تحديث الرسائل - تحقق من الاتصال', 'Could not refresh - check your connection');
+        }
+      }
+      return;
+    }
+
     if(!authToken) return;
     try{
       const res = await fetch(`${currentApiBase}/messages`, {
@@ -2456,12 +2530,23 @@
     item.appendChild(loadingEl);
 
     try{
-      const res = await fetch(`${currentApiBase}/messages/${encodeURIComponent(item.dataset.id)}`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if(!res.ok) throw new Error('read message failed');
-      const full = await res.json();
-      const bodyText = full.text || full.intro || (isEn ? 'No preview available for this message.' : 'مفيش معاينة نصية متاحة لهذه الرسالة.');
+      let bodyText;
+      if(currentApiBase === MAILDROP_BASE){
+        const data = await maildropQuery(
+          `query Msg($mailbox: String!, $id: String!){ message(mailbox: $mailbox, id: $id){ data html } }`,
+          { mailbox: accountId, id: item.dataset.id }
+        );
+        const full = data && data.message;
+        const raw = full && (full.html || full.data);
+        bodyText = (raw && (full.html ? htmlToPlainText(raw) : raw)) || (isEn ? 'No preview available for this message.' : 'مفيش معاينة نصية متاحة لهذه الرسالة.');
+      } else {
+        const res = await fetch(`${currentApiBase}/messages/${encodeURIComponent(item.dataset.id)}`, {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if(!res.ok) throw new Error('read message failed');
+        const full = await res.json();
+        bodyText = full.text || full.intro || (isEn ? 'No preview available for this message.' : 'مفيش معاينة نصية متاحة لهذه الرسالة.');
+      }
       loadingEl.remove();
       const bodyWrap = document.createElement('div');
       bodyWrap.className = 'msg-body';
@@ -2485,6 +2570,9 @@
   deleteBtn.addEventListener('click', () => {
     addButtonFx(deleteBtn, 'shake');
     stopPolling();
+    /* Maildrop has no accounts to delete server-side (authToken stays null
+       for it), so this REST delete call is naturally skipped for it and we
+       just forget the mailbox name locally below. */
     if(accountId && authToken){
       fetch(`${currentApiBase}/accounts/${accountId}`, {
         method: 'DELETE',
