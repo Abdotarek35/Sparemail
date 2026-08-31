@@ -1027,23 +1027,7 @@
   .msg-item:hover{ transform:translateY(-2px); box-shadow:0 10px 20px rgba(10,15,25,.15); }
   .msg-item .msg-from{ font-size:14px; font-weight:700; color:var(--text-dark); }
   .msg-item .msg-subject{ font-size:13px; color:var(--text-gray); }
-  .msg-body{
-    max-height:0;
-    overflow:hidden;
-    transition:max-height .3s ease;
-  }
-  .msg-item.open .msg-body{ max-height:260px; overflow-y:auto; overscroll-behavior:contain; }
-  .msg-body p{
-    margin:10px 0 0;
-    padding-top:10px;
-    border-top:1px dashed var(--card-border);
-    font-size:12.5px;
-    line-height:1.7;
-    color:var(--text-gray);
-    white-space:pre-wrap;
-    word-break:break-word;
-  }
-  .msg-item .msg-loading{ font-size:12px; color:var(--text-gray); opacity:.7; }
+  .msg-item.read .msg-from{ font-weight:500; }
 
   /* ===== How It Works ===== */
   .how-card{ text-align:center; }
@@ -1381,6 +1365,106 @@
     letter-spacing:-.3px;
     color:var(--text-dark);
     margin:0;
+  }
+
+  /* ===== Message detail overlay (Gmail-style reader) ===== */
+  .msg-detail-overlay{
+    display:flex;
+    flex-direction:column;
+    padding:14px clamp(10px,3vw,24px) 0;
+    overflow:hidden;
+  }
+  .msg-detail-header{
+    position:static;
+    margin:0 0 12px;
+    max-width:min(720px, 96vw);
+    align-items:flex-start;
+    flex-shrink:0;
+  }
+  .msg-detail-meta{ flex:1; min-width:0; padding:0 10px; }
+  .msg-detail-subject{
+    font-size:15px;
+    font-weight:800;
+    color:var(--text-dark);
+    margin:0 0 3px;
+    overflow-wrap:break-word;
+  }
+  .msg-detail-from{
+    font-size:12.5px;
+    color:var(--text-gray);
+    margin:0;
+    overflow-wrap:break-word;
+  }
+  .msg-detail-date{
+    font-size:11px;
+    color:var(--text-gray);
+    opacity:.75;
+    margin:3px 0 0;
+  }
+  .msg-detail-avatar{
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:var(--input-bg);
+    border:1px solid var(--card-border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:15px;
+    font-weight:800;
+    color:var(--blue);
+    flex-shrink:0;
+  }
+  .msg-detail-body-wrap{
+    flex:1;
+    min-height:0;
+    max-width:min(720px, 96vw);
+    width:100%;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    padding-bottom:16px;
+  }
+  .msg-image-banner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    background:var(--input-bg);
+    border:1px solid var(--card-border);
+    border-radius:12px;
+    padding:9px 12px;
+    margin:0 0 10px;
+    font-size:12px;
+    color:var(--text-gray);
+    flex-shrink:0;
+  }
+  .msg-image-banner button{
+    flex-shrink:0;
+    border:1px solid var(--pill-border);
+    background:var(--pill-bg);
+    color:var(--blue);
+    font-weight:700;
+    font-size:12px;
+    padding:6px 12px;
+    border-radius:999px;
+    cursor:pointer;
+  }
+  .msg-detail-frame{
+    flex:1;
+    min-height:0;
+    width:100%;
+    border:1px solid var(--card-border);
+    border-radius:16px;
+    background:#fff;
+  }
+  .msg-detail-loading{
+    flex:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:13px;
+    color:var(--text-gray);
   }
 
   .articles-grid{
@@ -1901,6 +1985,28 @@
   </div>
 </div>
 
+<div class="overlay-page msg-detail-overlay" id="msgDetailPage">
+  <div class="overlay-header msg-detail-header">
+    <button class="overlay-back" id="msgDetailBackBtn" aria-label="رجوع">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="msg-detail-meta">
+      <p class="msg-detail-subject" id="msgDetailSubject"></p>
+      <p class="msg-detail-from" id="msgDetailFrom"></p>
+      <p class="msg-detail-date" id="msgDetailDate"></p>
+    </div>
+    <div class="msg-detail-avatar" id="msgDetailAvatar"></div>
+  </div>
+  <div class="msg-detail-body-wrap">
+    <div class="msg-image-banner" id="msgImageBanner" hidden>
+      <span data-ar="الصور الخارجية مخفية لحماية خصوصيتك" data-en="External images are hidden to protect your privacy">الصور الخارجية مخفية لحماية خصوصيتك</span>
+      <button type="button" id="msgLoadImagesBtn" data-ar="عرض الصور" data-en="Show images">عرض الصور</button>
+    </div>
+    <div class="msg-detail-loading" id="msgDetailLoading" data-ar="جاري تحميل الرسالة..." data-en="Loading message...">جاري تحميل الرسالة...</div>
+    <iframe class="msg-detail-frame" id="msgDetailFrame" hidden sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="no-referrer" title="محتوى الرسالة"></iframe>
+  </div>
+</div>
+
 
 <div class="fab-wrap" id="fabWrap">
   <div class="fab-ring"></div>
@@ -2177,6 +2283,7 @@
   let accountId = '';
   let pollTimer = null;
   let seenIds = new Set();
+  const tempmailMessageCache = new Map();
 
   const API_PROVIDERS = ['https://api.mail.tm', 'https://api.mail.gw'];
   const API = API_PROVIDERS[0];
@@ -2191,7 +2298,16 @@
   const MAILDROP_BASE = 'maildrop';
   const MAILDROP_DOMAIN = 'maildrop.cc';
   const MAILDROP_GRAPHQL = 'https://api.maildrop.cc/graphql';
-  const ALL_PROVIDERS = [...API_PROVIDERS, MAILDROP_BASE];
+
+  /* TempMail.lol - fourth provider. Plain REST, no API key needed for the
+     free tier. Unlike the others it has no "list domains" endpoint - you
+     only find out which domain you got after creating the inbox - so it's
+     offered in the dropdown as a "random address" option rather than a
+     named @domain, and it also joins the automatic fallback chain below. */
+  const TEMPMAIL_BASE = 'tempmail';
+  const TEMPMAIL_API = 'https://api.tempmail.lol/v2';
+
+  const ALL_PROVIDERS = [...API_PROVIDERS, MAILDROP_BASE, TEMPMAIL_BASE];
 
   async function maildropQuery(query, variables){
     const res = await fetch(MAILDROP_GRAPHQL, {
@@ -2203,15 +2319,6 @@
     const json = await res.json();
     if(json.errors && json.errors.length) throw new Error(json.errors[0].message || 'maildrop error');
     return json.data;
-  }
-
-  function htmlToPlainText(html){
-    try{
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-      return doc.body.textContent || '';
-    }catch(err){
-      return html.replace(/<[^>]*>/g, ' ');
-    }
   }
 
   function randomString(len){
@@ -2285,34 +2392,38 @@
       /* Maildrop.cc doesn't rotate domains, so it's always a real, working
          option - shown alongside whatever mail.tm/mail.gw return live. */
       availableDomains.push({ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE });
+      /* TempMail.lol has no domains-listing endpoint - its domain is only
+         known after an address is actually created, so it's offered as a
+         distinct "random address" choice rather than a named @domain. */
+      availableDomains.push({ domain: null, base: TEMPMAIL_BASE });
       domainsLoaded = true;
 
-      domainList.innerHTML = '';
-      availableDomains.forEach(({ domain, base }) => {
-        const li = document.createElement('li');
-        li.className = 'domain-option';
-        li.textContent = `@${domain}`;
-        li.addEventListener('click', () => {
-          closeDomainDropdown();
-          fetchNewAddress(domain, base);
-        });
-        domainList.appendChild(li);
-      });
+      renderDomainList();
     }catch(err){
-      availableDomains = [{ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE }];
+      availableDomains = [
+        { domain: MAILDROP_DOMAIN, base: MAILDROP_BASE },
+        { domain: null, base: TEMPMAIL_BASE }
+      ];
       domainsLoaded = true;
-      domainList.innerHTML = '';
-      availableDomains.forEach(({ domain, base }) => {
-        const li = document.createElement('li');
-        li.className = 'domain-option';
-        li.textContent = `@${domain}`;
-        li.addEventListener('click', () => {
-          closeDomainDropdown();
-          fetchNewAddress(domain, base);
-        });
-        domainList.appendChild(li);
-      });
+      renderDomainList();
     }
+  }
+
+  function renderDomainList(){
+    const isEn = document.documentElement.lang === 'en';
+    domainList.innerHTML = '';
+    availableDomains.forEach(({ domain, base }) => {
+      const li = document.createElement('li');
+      li.className = 'domain-option';
+      li.textContent = base === TEMPMAIL_BASE
+        ? (isEn ? 'Random address (TempMail)' : 'عنوان عشوائي (TempMail)')
+        : `@${domain}`;
+      li.addEventListener('click', () => {
+        closeDomainDropdown();
+        fetchNewAddress(domain || undefined, base);
+      });
+      domainList.appendChild(li);
+    });
   }
 
   function openDomainDropdown(){
@@ -2335,6 +2446,7 @@
   function resetMessages(){
     msgTotal = 0;
     seenIds = new Set();
+    tempmailMessageCache.clear();
     msgCount.textContent = '0';
     messagesList.innerHTML = '';
     messagesEmpty.style.display = 'flex';
@@ -2356,6 +2468,25 @@
       const finalDomain = MAILDROP_DOMAIN;
       const mailbox = randomString(10);
       return { address: `${mailbox}@${finalDomain}`, domain: finalDomain, accountId: mailbox, token: null };
+    }
+
+    if(base === TEMPMAIL_BASE){
+      /* No domain choice possible up front - the server assigns whatever
+         domain is currently available and we just read it off the address
+         it returns. accountId here holds TempMail's own inbox token,
+         which is passed as a query param (not a Bearer header) when
+         checking messages, so authToken stays null for this provider. */
+      const res = await fetch(`${TEMPMAIL_API}/inbox/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      if(!res.ok) throw new Error('tempmail inbox creation failed');
+      const data = await res.json();
+      const atIndex = (data.address || '').indexOf('@');
+      if(atIndex < 0) throw new Error('tempmail returned no address');
+      const finalDomain = data.address.slice(atIndex + 1);
+      return { address: data.address, domain: finalDomain, accountId: data.token, token: null };
     }
 
     let finalDomain = domain;
@@ -2446,9 +2577,43 @@
         const newOnes = messages.filter(m => !seenIds.has(m.id)).reverse();
         newOnes.forEach(m => {
           seenIds.add(m.id);
-          addRealMessage({ id: m.id, subject: m.subject, from: { address: m.headerfrom } });
+          addRealMessage({ id: m.id, subject: m.subject, from: { address: m.headerfrom }, createdAt: m.date });
         });
         if(manual && newOnes.length === 0){
+          showToast('مفيش رسائل جديدة لسه', 'No new messages yet');
+        }
+      }catch(err){
+        if(manual){
+          showToast('تعذّر تحديث الرسائل - تحقق من الاتصال', 'Could not refresh - check your connection');
+        }
+      }
+      return;
+    }
+
+    if(currentApiBase === TEMPMAIL_BASE){
+      if(!accountId) return;
+      try{
+        const res = await fetch(`${TEMPMAIL_API}/inbox?token=${encodeURIComponent(accountId)}`);
+        if(!res.ok) throw new Error('tempmail fetch messages failed');
+        const data = await res.json();
+        if(data.expired){
+          if(manual) showToast('انتهت صلاحية الصندوق - جرّب تغيير العنوان', 'This inbox expired - try changing address');
+          return;
+        }
+        /* TempMail messages have no id from the server, and array order
+           isn't documented, so sort by date ascending and synthesize a
+           stable key before prepending (newest ends up on top, as usual). */
+        const emails = (data.emails || []).slice().sort((a, b) => (a.date || 0) - (b.date || 0));
+        let addedAny = false;
+        emails.forEach(m => {
+          const key = `tm_${m.date}_${m.from}_${m.subject}`;
+          if(seenIds.has(key)) return;
+          seenIds.add(key);
+          tempmailMessageCache.set(key, m);
+          addedAny = true;
+          addRealMessage({ id: key, subject: m.subject, from: { address: m.from }, createdAt: m.date });
+        });
+        if(manual && !addedAny){
           showToast('مفيش رسائل جديدة لسه', 'No new messages yet');
         }
       }catch(err){
@@ -2494,13 +2659,20 @@
     addButtonFx(msgCount, 'pop');
 
     const isEn = document.documentElement.lang === 'en';
-    const senderRaw = (m.from && (m.from.name || m.from.address)) || (isEn ? 'Unknown sender' : 'مرسل غير معروف');
+    const fromName = (m.from && m.from.name) || '';
+    const fromAddress = (m.from && m.from.address) || '';
+    const senderRaw = fromName || fromAddress || (isEn ? 'Unknown sender' : 'مرسل غير معروف');
     const fromDisplay = escapeHtml(senderRaw);
-    const subjectDisplay = escapeHtml(m.subject || (isEn ? '(no subject)' : '(بدون عنوان)'));
+    const subjectRaw = m.subject || (isEn ? '(no subject)' : '(بدون عنوان)');
+    const subjectDisplay = escapeHtml(subjectRaw);
 
     const li = document.createElement('li');
     li.className = 'msg-item';
     li.dataset.id = m.id;
+    li.dataset.fromName = fromName;
+    li.dataset.fromAddress = fromAddress;
+    li.dataset.subject = subjectRaw;
+    li.dataset.createdAt = m.createdAt || m.date || '';
     li.innerHTML = `<span class="msg-from">${fromDisplay}</span><span class="msg-subject">${subjectDisplay}</span>`;
     messagesList.prepend(li);
 
@@ -2510,54 +2682,167 @@
     }
   }
 
-  messagesList.addEventListener('click', async (e) => {
-    const item = e.target.closest('.msg-item');
-    if(!item) return;
+  const msgDetailPage = document.getElementById('msgDetailPage');
+  const msgDetailBackBtn = document.getElementById('msgDetailBackBtn');
+  const msgDetailSubject = document.getElementById('msgDetailSubject');
+  const msgDetailFrom = document.getElementById('msgDetailFrom');
+  const msgDetailDate = document.getElementById('msgDetailDate');
+  const msgDetailAvatar = document.getElementById('msgDetailAvatar');
+  const msgDetailLoading = document.getElementById('msgDetailLoading');
+  const msgDetailFrame = document.getElementById('msgDetailFrame');
+  const msgImageBanner = document.getElementById('msgImageBanner');
+  const msgLoadImagesBtn = document.getElementById('msgLoadImagesBtn');
 
-    const isOpen = item.classList.contains('open');
-    if(isOpen){
-      item.classList.remove('open');
-      return;
+  let msgDetailToken = 0;
+  let msgDetailContent = null; // { html, text } for the currently open message
+
+  function formatMsgDate(value, isEn){
+    if(!value) return '';
+    const parsed = /^\d+$/.test(value) ? Number(value) : value;
+    const d = new Date(parsed);
+    if(isNaN(d.getTime())) return '';
+    try{
+      return d.toLocaleString(isEn ? 'en-US' : 'ar-EG', { dateStyle: 'medium', timeStyle: 'short' });
+    }catch(err){
+      return d.toString();
     }
-    item.classList.add('open');
+  }
 
-    if(item.dataset.loaded === 'true') return;
-
+  /* Builds a safe standalone HTML document for the sandboxed iframe:
+     - strips <script>/<iframe>/<object>/<embed> (defense in depth; the
+       sandbox already blocks script execution regardless)
+     - forces every link to open in a new tab so real CTA buttons work
+       without letting the email navigate our own page
+     - neutralizes <form action> so nothing can auto-submit
+     - blocks remote images by default (tracking-pixel protection) unless
+       allowImages is true, similar to Gmail's "display images" prompt */
+  function buildEmailDoc(rawHtml, rawText, allowImages){
     const isEn = document.documentElement.lang === 'en';
-    const loadingEl = document.createElement('div');
-    loadingEl.className = 'msg-loading';
-    loadingEl.textContent = isEn ? 'Loading…' : 'جاري التحميل...';
-    item.appendChild(loadingEl);
+    let doc;
+    if(rawHtml && rawHtml.trim()){
+      doc = new DOMParser().parseFromString(rawHtml, 'text/html');
+    } else {
+      doc = new DOMParser().parseFromString('<!doctype html><html><body></body></html>', 'text/html');
+      const pre = doc.createElement('div');
+      pre.setAttribute('style', 'white-space:pre-wrap; word-break:break-word;');
+      pre.textContent = rawText || (isEn ? 'No content.' : 'لا يوجد محتوى.');
+      doc.body.appendChild(pre);
+    }
+
+    doc.querySelectorAll('script, iframe, object, embed').forEach(el => el.remove());
+    doc.querySelectorAll('form').forEach(f => f.removeAttribute('action'));
+    doc.querySelectorAll('a[href]').forEach(a => {
+      a.setAttribute('target', '_blank');
+      a.setAttribute('rel', 'noopener noreferrer');
+    });
+
+    let hasRemoteImages = false;
+    doc.querySelectorAll('img[src]').forEach(img => {
+      const src = img.getAttribute('src') || '';
+      if(!/^https?:\/\//i.test(src)) return;
+      hasRemoteImages = true;
+      if(!allowImages){
+        img.setAttribute('data-blocked-src', src);
+        img.removeAttribute('src');
+        img.classList.add('sm-blocked-img');
+      }
+    });
+
+    const styleEl = doc.createElement('style');
+    styleEl.textContent = `
+      html, body{ margin:0; overscroll-behavior:contain; }
+      body{ padding:16px; font-family:-apple-system,'Segoe UI',Tahoma,Arial,sans-serif; font-size:14.5px; line-height:1.7; color:#1c1c1c; }
+      img{ max-width:100%; height:auto; }
+      .sm-blocked-img{ display:inline-block; min-width:36px; min-height:36px; background:rgba(120,120,120,.15); border:1px dashed rgba(120,120,120,.4); border-radius:6px; vertical-align:middle; }
+      table{ max-width:100% !important; }
+    `;
+    if(doc.head){
+      doc.head.insertBefore(styleEl, doc.head.firstChild);
+    } else {
+      doc.documentElement.insertBefore(styleEl, doc.body);
+    }
+
+    return { srcdoc: '<!doctype html>' + doc.documentElement.outerHTML, hasRemoteImages };
+  }
+
+  function renderMsgDetailFrame(allowImages){
+    if(!msgDetailContent) return;
+    const { srcdoc, hasRemoteImages } = buildEmailDoc(msgDetailContent.html, msgDetailContent.text, allowImages);
+    msgDetailFrame.srcdoc = srcdoc;
+    msgImageBanner.hidden = !(hasRemoteImages && !allowImages);
+  }
+
+  msgLoadImagesBtn.addEventListener('click', () => renderMsgDetailFrame(true));
+  msgDetailBackBtn.addEventListener('click', closeOverlays);
+
+  async function openMessageDetail(item){
+    const isEn = document.documentElement.lang === 'en';
+    const token = ++msgDetailToken;
+
+    const fromName = item.dataset.fromName || '';
+    const fromAddress = item.dataset.fromAddress || '';
+    const subject = item.dataset.subject || (isEn ? '(no subject)' : '(بدون عنوان)');
+
+    msgDetailSubject.textContent = subject;
+    msgDetailFrom.textContent = (fromName && fromAddress && fromName !== fromAddress)
+      ? `${fromName} <${fromAddress}>`
+      : (fromAddress || fromName || (isEn ? 'Unknown sender' : 'مرسل غير معروف'));
+    msgDetailDate.textContent = formatMsgDate(item.dataset.createdAt, isEn);
+    msgDetailAvatar.textContent = (fromName || fromAddress || '?').trim().charAt(0).toUpperCase() || '?';
+
+    msgDetailContent = null;
+    msgImageBanner.hidden = true;
+    msgDetailFrame.hidden = true;
+    msgDetailFrame.removeAttribute('srcdoc');
+    msgDetailLoading.hidden = false;
+    msgDetailLoading.textContent = isEn ? 'Loading message...' : 'جاري تحميل الرسالة...';
+
+    openOverlay(msgDetailPage);
 
     try{
-      let bodyText;
+      let html = '';
+      let text = '';
       if(currentApiBase === MAILDROP_BASE){
         const data = await maildropQuery(
           `query Msg($mailbox: String!, $id: String!){ message(mailbox: $mailbox, id: $id){ data html } }`,
           { mailbox: accountId, id: item.dataset.id }
         );
         const full = data && data.message;
-        const raw = full && (full.html || full.data);
-        bodyText = (raw && (full.html ? htmlToPlainText(raw) : raw)) || (isEn ? 'No preview available for this message.' : 'مفيش معاينة نصية متاحة لهذه الرسالة.');
+        html = (full && full.html) || '';
+        text = (full && full.data) || '';
+      } else if(currentApiBase === TEMPMAIL_BASE){
+        const cached = tempmailMessageCache.get(item.dataset.id);
+        html = (cached && cached.html) || '';
+        text = (cached && cached.body) || '';
       } else {
         const res = await fetch(`${currentApiBase}/messages/${encodeURIComponent(item.dataset.id)}`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if(!res.ok) throw new Error('read message failed');
         const full = await res.json();
-        bodyText = full.text || full.intro || (isEn ? 'No preview available for this message.' : 'مفيش معاينة نصية متاحة لهذه الرسالة.');
+        html = (full.html && full.html.length) ? full.html.join('') : '';
+        text = full.text || full.intro || '';
       }
-      loadingEl.remove();
-      const bodyWrap = document.createElement('div');
-      bodyWrap.className = 'msg-body';
-      const p = document.createElement('p');
-      p.textContent = bodyText;
-      bodyWrap.appendChild(p);
-      item.appendChild(bodyWrap);
+
+      if(token !== msgDetailToken) return;
+
+      msgDetailContent = { html, text };
+      msgDetailLoading.hidden = true;
+      msgDetailFrame.hidden = false;
+      renderMsgDetailFrame(false);
+      item.classList.add('read');
       item.dataset.loaded = 'true';
     }catch(err){
-      loadingEl.textContent = isEn ? 'Failed to load message.' : 'تعذّر تحميل الرسالة.';
+      if(token !== msgDetailToken) return;
+      msgDetailLoading.hidden = false;
+      msgDetailLoading.textContent = isEn ? 'Could not load this message.' : 'تعذّر تحميل الرسالة.';
     }
+  }
+
+  messagesList.addEventListener('click', (e) => {
+    const item = e.target.closest('.msg-item');
+    if(!item) return;
+    openMessageDetail(item);
   });
 
   changeBtn.addEventListener('click', () => {
