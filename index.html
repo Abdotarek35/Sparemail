@@ -2241,7 +2241,6 @@
   let accountId = '';
   let pollTimer = null;
   let seenIds = new Set();
-  const tempmailMessageCache = new Map();
 
   const API_PROVIDERS = ['https://api.mail.tm', 'https://api.mail.gw'];
   const API = API_PROVIDERS[0];
@@ -2257,15 +2256,7 @@
   const MAILDROP_DOMAIN = 'maildrop.cc';
   const MAILDROP_GRAPHQL = 'https://api.maildrop.cc/graphql';
 
-  /* TempMail.lol - fourth provider. Plain REST, no API key needed for the
-     free tier. Unlike the others it has no "list domains" endpoint - you
-     only find out which domain you got after creating the inbox - so it's
-     offered in the dropdown as a "random address" option rather than a
-     named @domain, and it also joins the automatic fallback chain below. */
-  const TEMPMAIL_BASE = 'tempmail';
-  const TEMPMAIL_API = 'https://api.tempmail.lol/v2';
-
-  const ALL_PROVIDERS = [...API_PROVIDERS, MAILDROP_BASE, TEMPMAIL_BASE];
+  const ALL_PROVIDERS = [...API_PROVIDERS, MAILDROP_BASE];
 
   async function maildropQuery(query, variables){
     const res = await fetch(MAILDROP_GRAPHQL, {
@@ -2350,35 +2341,25 @@
       /* Maildrop.cc doesn't rotate domains, so it's always a real, working
          option - shown alongside whatever mail.tm/mail.gw return live. */
       availableDomains.push({ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE });
-      /* TempMail.lol has no domains-listing endpoint - its domain is only
-         known after an address is actually created, so it's offered as a
-         distinct "random address" choice rather than a named @domain. */
-      availableDomains.push({ domain: null, base: TEMPMAIL_BASE });
       domainsLoaded = true;
 
       renderDomainList();
     }catch(err){
-      availableDomains = [
-        { domain: MAILDROP_DOMAIN, base: MAILDROP_BASE },
-        { domain: null, base: TEMPMAIL_BASE }
-      ];
+      availableDomains = [{ domain: MAILDROP_DOMAIN, base: MAILDROP_BASE }];
       domainsLoaded = true;
       renderDomainList();
     }
   }
 
   function renderDomainList(){
-    const isEn = document.documentElement.lang === 'en';
     domainList.innerHTML = '';
     availableDomains.forEach(({ domain, base }) => {
       const li = document.createElement('li');
       li.className = 'domain-option';
-      li.textContent = base === TEMPMAIL_BASE
-        ? (isEn ? 'Random address (TempMail)' : 'عنوان عشوائي (TempMail)')
-        : `@${domain}`;
+      li.textContent = `@${domain}`;
       li.addEventListener('click', () => {
         closeDomainDropdown();
-        fetchNewAddress(domain || undefined, base);
+        fetchNewAddress(domain, base);
       });
       domainList.appendChild(li);
     });
@@ -2404,7 +2385,6 @@
   function resetMessages(){
     msgTotal = 0;
     seenIds = new Set();
-    tempmailMessageCache.clear();
     msgCount.textContent = '0';
     messagesList.innerHTML = '';
     messagesEmpty.style.display = 'flex';
@@ -2426,25 +2406,6 @@
       const finalDomain = MAILDROP_DOMAIN;
       const mailbox = randomString(10);
       return { address: `${mailbox}@${finalDomain}`, domain: finalDomain, accountId: mailbox, token: null };
-    }
-
-    if(base === TEMPMAIL_BASE){
-      /* No domain choice possible up front - the server assigns whatever
-         domain is currently available and we just read it off the address
-         it returns. accountId here holds TempMail's own inbox token,
-         which is passed as a query param (not a Bearer header) when
-         checking messages, so authToken stays null for this provider. */
-      const res = await fetch(`${TEMPMAIL_API}/inbox/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
-      });
-      if(!res.ok) throw new Error('tempmail inbox creation failed');
-      const data = await res.json();
-      const atIndex = (data.address || '').indexOf('@');
-      if(atIndex < 0) throw new Error('tempmail returned no address');
-      const finalDomain = data.address.slice(atIndex + 1);
-      return { address: data.address, domain: finalDomain, accountId: data.token, token: null };
     }
 
     let finalDomain = domain;
@@ -2538,40 +2499,6 @@
           addRealMessage({ id: m.id, subject: m.subject, from: { address: m.headerfrom }, createdAt: m.date });
         });
         if(manual && newOnes.length === 0){
-          showToast('مفيش رسائل جديدة لسه', 'No new messages yet');
-        }
-      }catch(err){
-        if(manual){
-          showToast('تعذّر تحديث الرسائل - تحقق من الاتصال', 'Could not refresh - check your connection');
-        }
-      }
-      return;
-    }
-
-    if(currentApiBase === TEMPMAIL_BASE){
-      if(!accountId) return;
-      try{
-        const res = await fetch(`${TEMPMAIL_API}/inbox?token=${encodeURIComponent(accountId)}`);
-        if(!res.ok) throw new Error('tempmail fetch messages failed');
-        const data = await res.json();
-        if(data.expired){
-          if(manual) showToast('انتهت صلاحية الصندوق - جرّب تغيير العنوان', 'This inbox expired - try changing address');
-          return;
-        }
-        /* TempMail messages have no id from the server, and array order
-           isn't documented, so sort by date ascending and synthesize a
-           stable key before prepending (newest ends up on top, as usual). */
-        const emails = (data.emails || []).slice().sort((a, b) => (a.date || 0) - (b.date || 0));
-        let addedAny = false;
-        emails.forEach(m => {
-          const key = `tm_${m.date}_${m.from}_${m.subject}`;
-          if(seenIds.has(key)) return;
-          seenIds.add(key);
-          tempmailMessageCache.set(key, m);
-          addedAny = true;
-          addRealMessage({ id: key, subject: m.subject, from: { address: m.from }, createdAt: m.date });
-        });
-        if(manual && !addedAny){
           showToast('مفيش رسائل جديدة لسه', 'No new messages yet');
         }
       }catch(err){
@@ -2768,10 +2695,6 @@
         const full = data && data.message;
         html = (full && full.html) || '';
         text = (full && full.data) || '';
-      } else if(currentApiBase === TEMPMAIL_BASE){
-        const cached = tempmailMessageCache.get(item.dataset.id);
-        html = (cached && cached.html) || '';
-        text = (cached && cached.body) || '';
       } else {
         const res = await fetch(`${currentApiBase}/messages/${encodeURIComponent(item.dataset.id)}`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
