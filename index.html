@@ -1129,12 +1129,13 @@
   .step-title{ font-size:15.5px; font-weight:700; color:var(--text-dark); margin:0 0 8px; }
   .step-desc{ font-size:13px; color:var(--text-gray); line-height:1.65; margin:0; }
 
-  /* ===== Ad slot (empty - ready for real AdSense <ins> code) ===== */
-  .ad-placeholder{
-    min-height:60px;
-    margin-bottom:20px;
+  /* ===== Ad slots ===== */
+  .ad-placeholder-mid{
+    /* Real ad already placed here - no reserved empty space, so it sits
+       flush between the messages card and the "how it works" card. */
   }
-  .ad-placeholder.ad-placeholder-end{
+  .ad-placeholder-end{
+    min-height:60px;
     margin:28px 0 0;
   }
 
@@ -1661,7 +1662,7 @@
     .messages-list{ max-height:230px; }
     .msg-item{ padding:11px 13px; border-radius:11px; }
 
-    .ad-placeholder{ min-height:50px; }
+    .ad-placeholder-end{ min-height:50px; }
 
     .section-header{ margin-bottom:16px; }
     .section-title{ font-size:19px; }
@@ -1792,7 +1793,7 @@
     <ul class="messages-list" id="messagesList"></ul>
   </div>
 
-  <div class="ad-placeholder"><!-- ضع كود إعلان AdSense هنا (468x60) --></div>
+  <div class="ad-placeholder-mid"><!-- كود إعلان AdSense (468x60) --></div>
 
   <div class="card how-card">
     <div class="section-header">
@@ -1887,7 +1888,7 @@
     <a href="https://mail.tm" target="_blank" rel="noopener">mail.tm</a>
   </p>
 
-  <div class="ad-placeholder ad-placeholder-end"><!-- ضع كود إعلان AdSense هنا (نهاية الصفحة) --></div>
+  <div class="ad-placeholder-end"><!-- ضع كود إعلان AdSense هنا (نهاية الصفحة) --></div>
 </div>
 
 <div class="toast" id="toast">
